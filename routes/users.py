@@ -66,3 +66,19 @@ def registrar():
 @users_bp.route('/datos', methods = ['GET']) #<- obtener lo datos
 def obtener_datos():
     return jsonify({"mensaje" : "Hola mundo!"})
+
+
+# Login
+@users_bp.route('/registrar', methods = ['POST']) #<- login
+@users_bp.route('/login', methods = ['POST']) #<- login
+def login():
+    data = request.get_json()
+
+    email = data.get("email")
+    password = data.get("password")
+    if not email or not password:
+        return jsonify({"error" : "Porfavor llena todos los campos"}), 400
+    
+    cursor = get_db_connection()
+    cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+
