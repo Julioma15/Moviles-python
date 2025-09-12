@@ -2,7 +2,7 @@ from flask import Flask
 from flask_jwt_extended import JWTManager
 import os
 from dotenv import load_dotenv
-from config.db import init_db
+from config.db import init_db, mysql
 
 #importar la ruta del blueprint
 from routes.tareas import tareas_bp
