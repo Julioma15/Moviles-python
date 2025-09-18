@@ -11,13 +11,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Creamos el blueprint (la ruta)
-users_bp = Blueprint('users', __name__)
+users_bp = Blueprint('users', _name_)
 
 # inicializar Bcrypt
 bcrypt = Bcrypt()
 
 
-users_bp = Blueprint('users', __name__)
+users_bp = Blueprint('users', _name_)
 
 # -------- END POINTS -------------
 
@@ -69,55 +69,56 @@ def registrar():
 @users_bp.route('/login', methods = ['POST'])
 def login():
     data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
 
-   
-    if not email or not password:  
+    #validar los datos
+    campos_requeridos = ["email", "password"]
+    valido, mensaje = validar_campos_requeridos(data, campos_requeridos)
+    if not valido:
         return jsonify({"error": mensaje}), 400
-    cursor = get_db_connection()
 
-#consultar datos del usuario en la base de datos
-    cursor.execute("SELECT password, id_usuario FROM users WHERE email = %s", (email,))
-    store_password_hash = cursor.fetchone()
+    email = data.get("email")
+    password = data.get("password")
+
+    #obtener la conexion (cursor) a la base de datos usando get_db_connection
+    cursor = get_db_connection()
+    # consultamos los datos del usuario que se intenta loguear
+    cursor.execute("SELECT password, id_usuario FROM users where email = %s", (email,))
+    #Obetenemos el hash del password guardado, [hash, id]
+    stored_password_hash = cursor.fetchone()
+    #cerramos el cursor
     cursor.close()
-
-    if store_password_hash and bcrypt.check_password_hash(store_password_hash[0], password):
-        # Crear el token JWT duración 90 minutos
-        expires = datetime.timedelta(minutes=90)
+    #verificamos la contraseña
+    if stored_password_hash and bcrypt.check_password_hash(stored_password_hash[0], password):
+        #generamos el jwt con duración de 15 minutos
+        expires = datetime.timedelta(minutes = 60)
         access_token = create_access_token(
-            identity={"email": email, "id_usuario": store_password_hash[1]},
-            expires_delta=expires
+            identity = str(stored_password_hash[1]),
+            expires_delta = expires
         )
-        return jsonify({"token": access_token}), 200
+        return jsonify({"accessToken":access_token}),200
     else:
-        return jsonify({"error": "ʕ•́ᴥ•̀ʔっ Credenciales inválidas"}), 401
+        return jsonify({"error" : "credenciales incorrectas"}),401
+    
+
 @users_bp.route('/datos', methods = ['GET'])
-@jwt_required()
-def obtener_datos_usuario():
+@jwt_required() #<- decorador para requerir el token
+def obtener_datos():
+    # Obtener la identidad del token
     current_user = get_jwt_identity()
-    user_id = current_user["id_usuario"]
+    # Nos conectamos la BD
     cursor = get_db_connection()
+    # Vamos a buscar los datos del usuario en la BD
     query = "SELECT id_usuario, nombre, email FROM users WHERE id_usuario = %s"
-    cursor.execute(query, (user_id,))
+    cursor.execute(query, (current_user,))
     user_data = cursor.fetchone()
     cursor.close()
     if user_data:
-        return jsonify({
-            "id_usuario": user_data[0],
-            "nombre": user_data[1],
-            "email": user_data[2]
-        })
+        #accedemos a los datos por su indice o posicion
+        user_info = {
+            "id_ususario" : user_data[0],
+            "nombre" : user_data[1],
+            "email" : user_data[2]
+        }
+        return jsonify({"usuario" : user_info}),200
     else:
-        return jsonify({"error": "Usuario no encontrado"}), 404
-
-# No hace nada aun:
-#Crear un endpoint usando el PUT y pasando datos por el body y el URL
-@users_bp.route('/editar/<int:user_id>', methods = ['PUT'])
-def editar(user_id):
-    #obtenemos los datos de body
-    data = request.get_json()
-    nombre = data.get('nombre')
-    apellido = data.get('apellido')
-    mensaje = f" ʕ•́ᴥ•̀ʔっ El usuario {nombre} {apellido} con ID: {user_id} ha sido modificado correctamente."
-    return  jsonify({"mensaje": mensaje})
+        return jsonify({"error" : "usuario no encontrado"}),404
