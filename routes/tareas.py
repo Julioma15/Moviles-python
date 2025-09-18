@@ -9,7 +9,7 @@ load_dotenv()
 mysql = MySQL()
 
 #creamos el blueprint
-tareas_bp = Blueprint('tareas', _name_)
+tareas_bp = Blueprint('tareas', __name__)
 
 def validar_campos_requeridos(data, campos):
     faltantes = [campo for campo in campos if not data.get(campo)]
@@ -38,6 +38,10 @@ def obtener_tareas():
         return jsonify({"error": "Este usuario no tiene tareas"}), 400
     else:
         return jsonify({"lista": lista}), 200
+   
+
+
+
 
 #creamos un endpoint POST, recibe datos desde el body
 @tareas_bp.route('/crear', methods = ['POST'])

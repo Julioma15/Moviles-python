@@ -11,13 +11,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Creamos el blueprint (la ruta)
-users_bp = Blueprint('users', _name_)
+users_bp = Blueprint('users', __name__)
 
 # inicializar Bcrypt
 bcrypt = Bcrypt()
 
 
-users_bp = Blueprint('users', _name_)
+users_bp = Blueprint('users', __name__)
 
 # -------- END POINTS -------------
 
